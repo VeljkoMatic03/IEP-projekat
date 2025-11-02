@@ -1,0 +1,8 @@
+flask
+flask-sqlalchemy
+flask-migrate
+flask-jwt-extended
+pymysql
+cryptography
+web3
+py-solc-x

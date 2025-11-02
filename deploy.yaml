@@ -1,0 +1,138 @@
+version: "3"
+services:
+
+#------------DATABASES------------
+
+  auth-db:
+    container_name: auth-db
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=auth_db
+    volumes:
+      - auth-db-data:/var/lib/mysql
+    networks:
+      - authnet
+
+  shop-db:
+    container_name: shop-db
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=shop_db
+    volumes:
+      - shop-db-data:/var/lib/mysql
+    networks:
+      - shopnet
+
+  adminer-auth:
+    container_name: adminer-auth
+    image: adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-db
+    networks:
+      - authnet
+
+  adminer-shop:
+    container_name: adminer-shop
+    image: adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - shop-db
+    networks:
+      - shopnet
+
+#--------------SERVICES-----------
+
+  auth_service:
+    container_name: auth_service
+    image: auth_service
+    ports:
+      - 5000:5000
+    environment:
+      - DATABASE_URI=mysql+pymysql://root:root@auth-db/auth_db
+      - JWT_SECRET=JWT_SECRET_DEV_KEY
+      - PRODUCTION="PRODUCTION"
+    depends_on:
+      - auth-db
+    networks:
+      - authnet
+
+  customer_service:
+    container_name: customer-service
+    image: customer_service
+    ports:
+      - 5002:5000
+    environment:
+      - DATABASE_URI=mysql+pymysql://root:root@shop-db/shop_db
+      - JWT_SECRET=JWT_SECRET_DEV_KEY
+      - PRODUCTION="PRODUCTION"
+      - SOLC_VERSION=0.8.18
+      - WEB3_RPC=http://ganache:8545
+      - OWNER_ADDRESS_INDEX=1
+    depends_on:
+      - shop-db
+      - ganache
+    networks:
+      - shopnet
+
+  owner_service:
+    container_name: owner_service
+    image: owner_service
+    ports:
+      - 5001:5000
+    environment:
+      - DATABASE_URI=mysql+pymysql://root:root@shop-db/shop_db
+      - JWT_SECRET=JWT_SECRET_DEV_KEY
+      - PRODUCTION="PRODUCTION"
+    depends_on:
+      - shop-db
+    networks:
+      - shopnet
+
+  courier_service:
+    container_name: courier-service
+    image: courier_service
+    ports:
+      - 5003:5000
+    environment:
+      - DATABASE_URI=mysql+pymysql://root:root@shop-db/shop_db
+      - JWT_SECRET=JWT_SECRET_DEV_KEY
+      - PRODUCTION="PRODUCTION"
+      - SOLC_VERSION=0.8.18
+      - WEB3_RPC=http://ganache:8545
+      - OWNER_ADDRESS_INDEX=1
+    depends_on:
+      - shop-db
+      - ganache
+    networks:
+      - shopnet
+
+#---------------GANACHE---------------
+
+  ganache:
+    container_name: ganache
+    image: trufflesuite/ganache-cli
+    command: >
+      --accounts=10
+      --defaultBalanceEther=100
+      --mnemonic="veljko iep projekat"
+      --host=0.0.0.0
+      --port=8545
+    networks:
+      - shopnet
+    ports:
+      - "8545:8545"
+
+# --------------VOLUMES---------------
+volumes:
+  auth-db-data:
+  shop-db-data:
+
+# -------------NETWORKS-------------
+networks:
+  authnet:
+  shopnet:
